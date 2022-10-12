@@ -1,0 +1,237 @@
+﻿<div id="VuePage">
+    <br />
+    <div class="panel panel-default">
+        <div class="panel-heading">範例1 即時股價</div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label col-sm-2">股票:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="form.Sample1_Symbol">
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary" v-on:click="GetRealtimePrice()">查詢</button>
+
+        </div>
+        <div class="panel-footer">
+            <span v-html="realPrice"></span>
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading">範例2 每日收盤行情</div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label col-sm-2">日期:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="form.Sample2_Date">
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary" v-on:click="GetDayPrice()">查詢</button>
+        </div>
+        <div class="panel-footer">
+            <div class="table-responsive" style="overflow-y:auto;height:400px;">
+                <table class="table">
+                    <tr>
+                        <th>代碼</th>
+                        <th>名稱</th>
+                        <th>開盤價</th>
+                        <th>最高價</th>
+                        <th>最低價</th>
+                        <th>收盤價</th>
+                        <th>成交量</th>
+                    </tr>
+                    <tr v-for="(item, index) in gridDay">
+                        <td>
+                            {{item.symbolCode}}
+                        </td>
+                        <td>
+                            {{item.symbolName}}
+                        </td>
+                        <td>
+                            {{item.open}}
+                        </td>
+                        <td>{{item.high}}</td>
+                        <td>{{item.low}}</td>
+                        <td>{{item.close}}</td>
+                        <td>{{item.volume}}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading">範例3 當月各日成交資訊</div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label class="control-label col-sm-2">股票:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="form.Sample3_Symbol">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="control-label col-sm-2">日期:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" v-model="form.Sample3_Date">
+                </div>
+            </div>
+            <button type="button" class="btn btn-primary" v-on:click="GetMonthPrice()">查詢</button>
+        </div>
+        <div class="panel-footer">
+            <div class="table-responsive">
+                <table class="table">
+                    <tr>
+                        <th>日期</th>
+                        <th>開盤價</th>
+                        <th>最高價</th>
+                        <th>最低價</th>
+                        <th>收盤價</th>
+                        <th>成交量</th>
+                    </tr>
+                    <tr v-for="(item, index) in gridMonthPirce">
+                        <td>{{item.date}}</td>
+                        <td>{{item.open}}</td>
+                        <td>{{item.high}}</td>
+                        <td>{{item.low}}</td>
+                        <td>{{item.close}}</td>
+                        <td>{{item.volume}}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@section scripts{ 
+    <script>
+        var VuePage = new Vue({
+            el: '#VuePage'
+            , data: function () {
+                var data = {
+                    form: {
+                        Sample1_Symbol: ""
+                        , Sample2_Date: ""
+                        , Sample3_Symbol: ""
+                        , Sample3_Date:""
+                    }
+                    , gridDay: []
+                    , realPrice: ''
+                    , gridMonthPirce: []
+                };
+                return data;
+            }
+            , created: function () {
+                var self = this;
+
+                // 預設股票代碼
+                self.form.Sample1_Symbol = "2330,0050";
+                self.form.Sample3_Symbol = "2330";
+
+                // 產生今天日期
+                var Today = new Date();
+                var year = "" + Today.getFullYear();
+                var month = "" + (Today.getMonth() + 1); if (month.length == 1) { month = "0" + month; }
+                var day = "" + Today.getDate(); if (day.length == 1) { day = "0" + day; }
+                self.form.Sample2_Date = year + month + day;
+                self.form.Sample3_Date = year + month + day;
+            }
+            , methods: {
+                // 即時股價
+                GetRealtimePrice: function () {
+                    var self = this;
+                    var postData = {};
+                    postData['Sample1_Symbol'] = self.form.Sample1_Symbol;
+                    $.blockUI({ message: '處理中...' });
+                    $.ajax({
+                        url:'@Url.Content("~/Home/GetRealtimePrice")',
+                        method:'POST',
+                        dataType:'json',
+                        data: { inModel: postData},
+                        success: function (datas) {
+                            if (datas.ErrMsg) {
+                                alert(datas.ErrMsg);
+                                return;
+                            }
+
+                            self.realPrice = datas.realPrice;
+
+                            // 解除畫面鎖定
+                            $.unblockUI();
+                        },
+                        error: function (err) {
+                            alert(err.responseText);
+                        },
+                    });
+                }
+                // 每日收盤行情
+                , GetDayPrice: function () {
+                    var self = this;
+                    var postData = {};
+                    postData['Sample2_Date'] = self.form.Sample2_Date;
+                    $.blockUI({ message: '處理中...' });
+                    $.ajax({
+                        url:'@Url.Content("~/Home/GetDayPrice")',
+                        method:'POST',
+                        dataType:'json',
+                        data: { inModel: postData },
+                        success: function (datas) {
+                            if (datas.ErrMsg) {
+                                alert(datas.ErrMsg);
+                                return;
+                            }
+
+                            self.gridDay = [];
+                            // 顯示列表
+                            for (var i in datas.gridList) {
+                                var gridData = {};
+                                for (var key in datas.gridList[i]) {
+                                    gridData[key] = datas.gridList[i][key];
+                                }
+                                self.gridDay.push(gridData);
+                            }
+
+                            // 解除畫面鎖定
+                            $.unblockUI();
+                        },
+                        error: function (err) {
+                            alert(err.responseText);
+                        },
+                    });
+                }
+                // 當月各日成交資訊
+                , GetMonthPrice: function () {
+                    var self = this;
+                    var postData = {};
+                    postData['Sample3_Symbol'] = self.form.Sample3_Symbol;
+                    postData['Sample3_Date'] = self.form.Sample3_Date;
+                    $.blockUI({ message: '處理中...' });
+                    $.ajax({
+                        url:'@Url.Content("~/Home/GetMonthPrice")',
+                        method:'POST',
+                        dataType:'json',
+                        data: { inModel: postData },
+                        success: function (datas) {
+                            if (datas.ErrMsg) {
+                                alert(datas.ErrMsg);
+                                return;
+                            }
+
+                            self.gridMonthPirce = [];
+                            // 顯示列表
+                            for (var i in datas.gridList) {
+                                var gridData = {};
+                                for (var key in datas.gridList[i]) {
+                                    gridData[key] = datas.gridList[i][key];
+                                }
+                                self.gridMonthPirce.push(gridData);
+                            }
+
+                            // 解除畫面鎖定
+                            $.unblockUI();
+                        },
+                        error: function (err) {
+                            alert(err.responseText);
+                        },
+                    });
+                }
+            }
+        })
+    </script>
+}
